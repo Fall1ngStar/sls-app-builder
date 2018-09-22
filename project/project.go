@@ -3,13 +3,13 @@ package project
 import (
 	"github.com/urfave/cli"
 	"os"
-	"gopkg.in/libgit2/git2go.v26"
 	"os/exec"
 	"github.com/gobuffalo/packr"
 	"text/template"
 	"gopkg.in/yaml.v2"
 	"fmt"
 	"path"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 var ENVS = []string{
@@ -24,8 +24,8 @@ type EnvTemplate struct {
 
 type ServerlessConfig struct {
 	Service  string
-	Provider ProviderServerlessConfig
-	Custom   CustomServerlessConfig
+	Provider ProviderServerlessConfig `yaml:",omitempty"`
+	Custom   CustomServerlessConfig   `yaml:",omitempty"`
 }
 
 type ProviderServerlessConfig struct {
@@ -81,7 +81,7 @@ func (p *Project) createRootProjectFolder() error {
 }
 
 func (p *Project) initProjectGitRepository() error {
-	repository, err := git.InitRepository(p.Path, false)
+	repository, err := git.PlainInit(p.Path, false)
 	if err != nil {
 		return cli.NewExitError("Could not init git repository", 1)
 	}
