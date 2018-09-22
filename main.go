@@ -6,6 +6,7 @@ import (
 	"gopkg.in/libgit2/git2go.v26"
 	"log"
 	"os"
+	"fmt"
 )
 
 func createProject(path string) {
@@ -14,7 +15,6 @@ func createProject(path string) {
 }
 
 func main() {
-	project.CheckServerlessRequirements()
 	app := cli.NewApp()
 	app.Name = "Builder"
 	app.Usage = "Building serverless app"
@@ -24,6 +24,16 @@ func main() {
 			Name:   "create",
 			Usage:  "Create a project folder",
 			Action: project.CreateProject,
+		},
+		{
+			Name: "check",
+			Usage: "Check requirements for project creation",
+			Action: func (c *cli.Context) error {
+				fmt.Println("Serverless:", project.CheckExecutableInPath("serverless"))
+				fmt.Println("Python:", project.CheckExecutableInPath("python"))
+				fmt.Println("NPM:", project.CheckExecutableInPath("npm"))
+				return nil
+			},
 		},
 	}
 

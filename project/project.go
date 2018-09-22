@@ -5,46 +5,131 @@ import (
 	"os"
 	"gopkg.in/libgit2/git2go.v26"
 	"os/exec"
+	"github.com/gobuffalo/packr"
+	"text/template"
+	"gopkg.in/yaml.v2"
+	"fmt"
+	"path"
 )
 
-func createRootProjectFolder(path string) error {
-	err := os.Mkdir(path, 0777)
-	if err != nil {
-		return cli.NewExitError("Could not create folder", 1)
-	}
-	return nil
+var ENVS = []string{
+	"DEV",
+	"QUAL",
+	"PROD",
 }
 
-func initProjectGitRepository(path string) (*git.Repository, error) {
-	repository, err := git.InitRepository(path, false)
-	if err != nil {
-		return nil, cli.NewExitError("Could not init git repository", 1)
-	}
-	return repository, nil
+type EnvTemplate struct {
+	EnvName string
+}
+
+type ServerlessConfig struct {
+	Service  string
+	Provider ProviderServerlessConfig
+	Custom   CustomServerlessConfig
+}
+
+type ProviderServerlessConfig struct {
+	Name       string
+	Region     string
+	Runtime    string
+	MemorySize int
+}
+
+type CustomServerlessConfig struct {
+	Pip string
+}
+
+type Project struct {
+	Path       string
+	Repository *git.Repository
+	Box        packr.Box
+	Serverless ServerlessConfig
 }
 
 func CreateProject(c *cli.Context) error {
-	var path string
+	var project Project
 	if c.NArg() == 0 {
-		path = "."
+		project.Path = "."
 	} else if c.NArg() == 1 {
-		path = c.Args()[0]
-		err := createRootProjectFolder(path)
+		project.Path = c.Args()[0]
+		err := project.createRootProjectFolder()
 		if err != nil {
 			return err
 		}
 	} else {
 		return cli.NewExitError("Wrong argument number provided", 1)
 	}
-
-	_, err := initProjectGitRepository(path)
+	err := project.initProjectGitRepository()
 	if err != nil {
 		return err
+	}
+	err = project.addSubFolders()
+	if err != nil {
+		return err
+	}
+	project.addEnvFiles()
+	addServerlessFile()
+	return nil
+}
+
+func (p *Project) createRootProjectFolder() error {
+	err := os.Mkdir(p.Path, 0777)
+	if err != nil {
+		return cli.NewExitError("Could not create folder", 1)
 	}
 	return nil
 }
 
-func CheckServerlessRequirements() bool {
-	_, err := exec.LookPath("serverless")
+func (p *Project) initProjectGitRepository() error {
+	repository, err := git.InitRepository(p.Path, false)
+	if err != nil {
+		return cli.NewExitError("Could not init git repository", 1)
+	}
+	p.Repository = repository
+	return nil
+}
+
+func (p *Project) addSubFolders() error {
+	folders := []string{
+		"/src/unit_test",
+		"/src/integration_test",
+		"/conf_git",
+	}
+	for _, folder := range folders {
+		err := os.MkdirAll(path.Join(p.Path, folder), 0777)
+		if err != nil {
+			return cli.NewExitError("Could not create folder "+folder, 1)
+		}
+	}
+	return nil
+}
+
+func (p *Project) addEnvFiles() {
+	box := packr.NewBox("../static")
+	envTemplate := box.String("template_env")
+	for _, env := range ENVS {
+		t, _ := template.New("tmp").Parse(envTemplate)
+		file, _ := os.Create(path.Join(p.Path, "/conf_git/", env+".env"))
+		t.Execute(file, EnvTemplate{EnvName: env})
+		file.Close()
+	}
+}
+
+func CheckExecutableInPath(executable string) bool {
+	_, err := exec.LookPath(executable)
 	return err == nil
+}
+
+func addServerlessFile() {
+	config := ServerlessConfig{
+		Service: "service",
+		Provider: ProviderServerlessConfig{
+			Name:       "aws",
+			Region:     "eu-west-1",
+			Runtime:    "python3.6",
+			MemorySize: 128,
+		},
+	}
+	result, _ := yaml.Marshal(&config)
+	fmt.Println(string(result))
 }
