@@ -1,11 +1,11 @@
 package project
 
 import (
-	"fmt"
+	"github.com/Fall1ngStar/sls-app-builder/config"
 	"github.com/gobuffalo/packr"
 	"github.com/urfave/cli"
 	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/yaml.v2"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -22,28 +22,11 @@ type EnvTemplate struct {
 	EnvName string
 }
 
-type ServerlessConfig struct {
-	Service  string
-	Provider ProviderServerlessConfig `yaml:",omitempty"`
-	Custom   CustomServerlessConfig   `yaml:",omitempty"`
-}
-
-type ProviderServerlessConfig struct {
-	Name       string
-	Region     string
-	Runtime    string
-	MemorySize int
-}
-
-type CustomServerlessConfig struct {
-	Pip string
-}
-
 type Project struct {
 	Path       string
 	Repository *git.Repository
 	Box        packr.Box
-	Serverless ServerlessConfig
+	Serverless *config.ServerlessConfig
 }
 
 func CreateProject(c *cli.Context) error {
@@ -63,18 +46,39 @@ func CreateProject(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	project.Box = packr.NewBox("../static")
 	err = project.addSubFolders()
 	if err != nil {
 		return err
 	}
 	project.addEnvFiles()
-	addServerlessFile()
+	project.addServerlessFile()
 	return nil
+}
+
+func LoadProject() (*Project, error) {
+	repository, err := git.PlainOpen(".")
+	if err != nil {
+		return nil, cli.NewExitError("Could not load git repository", 1)
+	}
+	storageBox := packr.NewBox("../static")
+	serverlessConfig, err := config.LoadServerlessConfig("./serverless.yml")
+	if err != nil {
+		log.Println(err)
+		return nil, cli.NewExitError("Could not load serverless config", 1)
+	}
+	return &Project{
+		Path:       ".",
+		Repository: repository,
+		Box:        storageBox,
+		Serverless: serverlessConfig,
+	}, nil
 }
 
 func (p *Project) createRootProjectFolder() error {
 	err := os.Mkdir(p.Path, 0777)
 	if err != nil {
+		log.Println(err)
 		return cli.NewExitError("Could not create folder", 1)
 	}
 	return nil
@@ -83,6 +87,7 @@ func (p *Project) createRootProjectFolder() error {
 func (p *Project) initProjectGitRepository() error {
 	repository, err := git.PlainInit(p.Path, false)
 	if err != nil {
+		log.Println(err)
 		return cli.NewExitError("Could not init git repository", 1)
 	}
 	p.Repository = repository
@@ -105,8 +110,7 @@ func (p *Project) addSubFolders() error {
 }
 
 func (p *Project) addEnvFiles() {
-	box := packr.NewBox("../static")
-	envTemplate := box.String("template_env")
+	envTemplate := p.Box.String("template_env")
 	for _, env := range ENVS {
 		t, _ := template.New("tmp").Parse(envTemplate)
 		file, _ := os.Create(path.Join(p.Path, "/conf_git/", env+".env"))
@@ -120,16 +124,9 @@ func CheckExecutableInPath(executable string) bool {
 	return err == nil
 }
 
-func addServerlessFile() {
-	config := ServerlessConfig{
-		Service: "service",
-		Provider: ProviderServerlessConfig{
-			Name:       "aws",
-			Region:     "eu-west-1",
-			Runtime:    "python3.6",
-			MemorySize: 128,
-		},
-	}
-	result, _ := yaml.Marshal(&config)
-	fmt.Println(string(result))
+func (p *Project) addServerlessFile() {
+	cfg := config.NewServerlessConfig()
+	file, _ := os.Create(path.Join(p.Path, "serverless.yml"))
+	defer file.Close()
+	file.WriteString(cfg.ToYaml())
 }
