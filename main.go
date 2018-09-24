@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/fall1ngstar/builder/project"
+	"github.com/Fall1ngStar/sls-app-builder/project"
 	"github.com/urfave/cli"
 	"log"
 	"os"
@@ -12,7 +12,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Builder"
 	app.Usage = "Building serverless app"
-
+	app.Version = "0.0.1"
 	app.Commands = []cli.Command{
 		{
 			Name:   "create",

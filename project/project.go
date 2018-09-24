@@ -1,15 +1,15 @@
 package project
 
 import (
+	"fmt"
+	"github.com/gobuffalo/packr"
 	"github.com/urfave/cli"
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/yaml.v2"
 	"os"
 	"os/exec"
-	"github.com/gobuffalo/packr"
-	"text/template"
-	"gopkg.in/yaml.v2"
-	"fmt"
 	"path"
-	"gopkg.in/src-d/go-git.v4"
+	"text/template"
 )
 
 var ENVS = []string{
