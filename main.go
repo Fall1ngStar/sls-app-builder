@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/Fall1ngStar/sls-app-builder/config"
 	"github.com/Fall1ngStar/sls-app-builder/project"
 	"github.com/urfave/cli"
 	"log"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -37,8 +37,9 @@ func main() {
 				if err != nil {
 					return err
 				}
-				fmt.Println(p.Serverless.Service)
-				fmt.Println(p.Path)
+				//key := p.Serverless["service"]
+				fmt.Println(p.Serverless)
+				//fmt.Println(p.Path)
 				return nil
 			},
 		},
@@ -46,15 +47,17 @@ func main() {
 			Name: "package",
 			Action: func(c *cli.Context) error {
 				proj, _ := project.LoadProject()
-				head, _ := proj.Repository.Head()
-				name := head.Name().Short()
-				name = "5-edu"
-				name = strings.Replace(strings.Title(name), "_", "-", -1)
-				result := strings.Split(name, "-")[1:]
-				fmt.Println(strings.Join(result, ""))
+				fmt.Println(proj.GetBranchName())
 				//cmd := exec.Command("serverless", "package", "--verbose")
 				//cmd.Stdout = os.Stdout
 				//cmd.Run()
+				return nil
+			},
+		},
+		{
+			Name: "test",
+			Action: func(c *cli.Context) error {
+				config.UpdateConfig()
 				return nil
 			},
 		},

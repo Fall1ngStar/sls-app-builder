@@ -2,13 +2,16 @@ package project
 
 import (
 	"github.com/Fall1ngStar/sls-app-builder/config"
+	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/gobuffalo/packr"
 	"github.com/urfave/cli"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"log"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"text/template"
 )
 
@@ -26,7 +29,7 @@ type Project struct {
 	Path       string
 	Repository *git.Repository
 	Box        packr.Box
-	Serverless *config.ServerlessConfig
+	Serverless map[string]interface{}
 }
 
 func CreateProject(c *cli.Context) error {
@@ -53,6 +56,7 @@ func CreateProject(c *cli.Context) error {
 	}
 	project.addEnvFiles()
 	project.addServerlessFile()
+	project.makeFirstCommit()
 	return nil
 }
 
@@ -62,16 +66,16 @@ func LoadProject() (*Project, error) {
 		return nil, cli.NewExitError("Could not load git repository", 1)
 	}
 	storageBox := packr.NewBox("../static")
-	serverlessConfig, err := config.LoadServerlessConfig("./serverless.yml")
-	if err != nil {
-		log.Println(err)
-		return nil, cli.NewExitError("Could not load serverless config", 1)
-	}
+	//serverlessConfig, err := config.LoadServerlessConfig("./serverless.yml")
+	//if err != nil {
+	//	log.Println(err)
+	//	return nil, cli.NewExitError("Could not load serverless config", 1)
+	//}
 	return &Project{
 		Path:       ".",
 		Repository: repository,
 		Box:        storageBox,
-		Serverless: serverlessConfig,
+		//Serverless: serverlessConfig,
 	}, nil
 }
 
@@ -129,4 +133,22 @@ func (p *Project) addServerlessFile() {
 	file, _ := os.Create(path.Join(p.Path, "serverless.yml"))
 	defer file.Close()
 	file.WriteString(cfg.ToYaml())
+}
+
+func (p *Project) makeFirstCommit() {
+	tree, _ := p.Repository.Worktree()
+	tree.Add(".")
+	tree.Commit("Initial commit", &git.CommitOptions{
+		Author: &object.Signature{
+			Name: "SLS App Builder CLI",
+		},
+	})
+}
+
+func (p *Project) GetBranchName() string {
+	head, _ := p.Repository.Head()
+	name := head.Name().Short()
+	name = strings.Replace(name, "_", "-", -1)
+	result := strings.Join(strings.Split(strings.Title(name), "-")[1:], "")
+	return result[:utils.Min(10, len(result))]
 }

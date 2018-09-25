@@ -1,42 +1,52 @@
 package config
 
 import (
+	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
+	"os"
 )
 
 type ServerlessConfig struct {
-	Service  map[string]interface{}
-	Provider ProviderServerlessConfig `yaml:",omitempty"`
-	Custom   CustomServerlessConfig   `yaml:",omitempty"`
+	//Service  map[string]interface{}
+	Provider Provider `yaml:",omitempty"`
+	//Custom   Custom   `yaml:",omitempty"`
 }
 
-type ProviderServerlessConfig struct {
-	Name             string
-	Region           string
-	Runtime          string
-	MemorySize       int
-	Timeout          int
-	DeploymentBucket string
-	Environment      map[string]string
+type Service struct {
+	Name         string
+	AwsKmsKeyArn string
 }
 
-type CustomServerlessConfig struct {
-	//Pip string
+type Package struct {
+	Include []string
+	Exclude []string
+}
+
+type Provider struct {
+	Name               string
+	Region             string
+	Runtime            string
+	MemorySize         int
+	Timeout            int
+	DeploymentBucket   string
+	LogRetentionInDays string
+	Environment        map[string]string
+}
+
+type Custom struct {
 }
 
 func NewServerlessConfig() *ServerlessConfig {
 	config := ServerlessConfig{
-		Service: map[string]interface{}{},
-		Provider: ProviderServerlessConfig{
+		//Service: map[string]interface{}{},
+		Provider: Provider{
 			Name:       "aws",
 			Region:     "eu-west-1",
 			Runtime:    "python3.6",
 			MemorySize: 128,
 			Timeout:    300,
-			Environment: map[string]string{
-				//"ACCOUNT_ID": "${env:ACCOUNT_ID}",
-			},
 		},
 	}
 	return &config
@@ -50,12 +60,27 @@ func (cfg *ServerlessConfig) ToYaml() string {
 func LoadServerlessConfig(path string) (*ServerlessConfig, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	var config ServerlessConfig
 	err = yaml.Unmarshal(content, &config)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	return &config, nil
+}
+
+func (cfg *ServerlessConfig) UpdateConfigFile(path string) {
+	var oldConf, newConf yaml.MapSlice
+	content, _ := ioutil.ReadFile(path)
+	yaml.Unmarshal(content, &oldConf)
+
+	out, _ := yaml.Marshal(cfg)
+	yaml.Unmarshal(out, &newConf)
+
+	mergo.Merge(&oldConf, newConf)
+	result, _ := yaml.Marshal(oldConf)
+	ioutil.WriteFile("serverless2.yml", result, os.FileMode(os.O_RDWR|os.O_CREATE|os.O_TRUNC))
 }
