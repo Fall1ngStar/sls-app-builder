@@ -9,38 +9,47 @@ import (
 )
 
 type ServerlessConfig struct {
-	//Service  map[string]interface{}
-	Provider Provider `yaml:",omitempty"`
+	Service   Service
+	Package   Package             `yaml:",omitempty"`
+	Provider  Provider            `yaml:",omitempty"`
+	Functions map[string]Function `yaml:",omitempty"`
 	//Custom   Custom   `yaml:",omitempty"`
 }
 
 type Service struct {
 	Name         string
-	AwsKmsKeyArn string
+	AwsKmsKeyArn string `yaml:",omitempty"`
 }
 
 type Package struct {
-	Include []string
-	Exclude []string
+	Include []string `yaml:",omitempty"`
+	Exclude []string `yaml:",omitempty"`
 }
 
 type Provider struct {
-	Name               string
-	Region             string
-	Runtime            string
-	MemorySize         int
-	Timeout            int
-	DeploymentBucket   string
-	LogRetentionInDays string
-	Environment        map[string]string
+	Name               string            `yaml:",omitempty"`
+	Region             string            `yaml:",omitempty"`
+	Runtime            string            `yaml:",omitempty"`
+	MemorySize         int               `yaml:",omitempty"`
+	Timeout            int               `yaml:",omitempty"`
+	DeploymentBucket   string            `yaml:",omitempty"`
+	LogRetentionInDays string            `yaml:",omitempty"`
+	Environment        map[string]string `yaml:",omitempty"`
+}
+
+type Function struct {
+	Handler string
+	Events  []map[string]interface{} `yaml:",omitempty"`
 }
 
 type Custom struct {
 }
 
-func NewServerlessConfig() *ServerlessConfig {
+func NewServerlessConfig(serviceName string) *ServerlessConfig {
 	config := ServerlessConfig{
-		//Service: map[string]interface{}{},
+		Service: Service{
+			Name: serviceName,
+		},
 		Provider: Provider{
 			Name:       "aws",
 			Region:     "eu-west-1",
@@ -82,5 +91,5 @@ func (cfg *ServerlessConfig) UpdateConfigFile(path string) {
 
 	mergo.Merge(&oldConf, newConf)
 	result, _ := yaml.Marshal(oldConf)
-	ioutil.WriteFile("serverless2.yml", result, os.FileMode(os.O_RDWR|os.O_CREATE|os.O_TRUNC))
+	ioutil.WriteFile(path, result, os.FileMode(os.O_RDWR|os.O_CREATE|os.O_TRUNC))
 }

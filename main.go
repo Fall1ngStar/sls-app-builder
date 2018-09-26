@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/Fall1ngStar/sls-app-builder/config"
 	"github.com/Fall1ngStar/sls-app-builder/project"
 	"github.com/urfave/cli"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -57,7 +57,11 @@ func main() {
 		{
 			Name: "test",
 			Action: func(c *cli.Context) error {
-				config.UpdateConfig()
+				p, _ := project.LoadProject()
+				fmt.Println(filepath.Dir(p.Path))
+				fmt.Println(filepath.Clean(p.Path))
+				wd, _ := os.Getwd()
+				fmt.Println(filepath.Dir(wd))
 				return nil
 			},
 		},

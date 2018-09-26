@@ -29,7 +29,7 @@ type Project struct {
 	Path       string
 	Repository *git.Repository
 	Box        packr.Box
-	Serverless map[string]interface{}
+	Serverless *config.ServerlessConfig
 }
 
 func CreateProject(c *cli.Context) error {
@@ -66,16 +66,16 @@ func LoadProject() (*Project, error) {
 		return nil, cli.NewExitError("Could not load git repository", 1)
 	}
 	storageBox := packr.NewBox("../static")
-	//serverlessConfig, err := config.LoadServerlessConfig("./serverless.yml")
-	//if err != nil {
-	//	log.Println(err)
-	//	return nil, cli.NewExitError("Could not load serverless config", 1)
-	//}
+	serverlessConfig, err := config.LoadServerlessConfig("./serverless.yml")
+	if err != nil {
+		log.Println(err)
+		return nil, cli.NewExitError("Could not load serverless config", 1)
+	}
 	return &Project{
 		Path:       ".",
 		Repository: repository,
 		Box:        storageBox,
-		//Serverless: serverlessConfig,
+		Serverless: serverlessConfig,
 	}, nil
 }
 
@@ -129,7 +129,7 @@ func CheckExecutableInPath(executable string) bool {
 }
 
 func (p *Project) addServerlessFile() {
-	cfg := config.NewServerlessConfig()
+	cfg := config.NewServerlessConfig("")
 	file, _ := os.Create(path.Join(p.Path, "serverless.yml"))
 	defer file.Close()
 	file.WriteString(cfg.ToYaml())
