@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/Fall1ngStar/sls-app-builder/config"
+	"github.com/Fall1ngStar/sls-app-builder/serverless"
 	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/gobuffalo/packr"
 	"github.com/urfave/cli"
@@ -29,7 +29,7 @@ type Project struct {
 	Path       string
 	Repository *git.Repository
 	Box        packr.Box
-	Serverless *config.ServerlessConfig
+	Serverless *serverless.Config
 }
 
 func CreateProject(c *cli.Context) error {
@@ -56,6 +56,7 @@ func CreateProject(c *cli.Context) error {
 	}
 	project.addEnvFiles()
 	project.addServerlessFile()
+	project.preparePythonEnv()
 	project.makeFirstCommit()
 	return nil
 }
@@ -66,7 +67,7 @@ func LoadProject() (*Project, error) {
 		return nil, cli.NewExitError("Could not load git repository", 1)
 	}
 	storageBox := packr.NewBox("../static")
-	serverlessConfig, err := config.LoadServerlessConfig("./serverless.yml")
+	serverlessConfig, err := serverless.LoadServerlessConfig("./serverless.yml")
 	if err != nil {
 		log.Println(err)
 		return nil, cli.NewExitError("Could not load serverless config", 1)
@@ -129,7 +130,7 @@ func CheckExecutableInPath(executable string) bool {
 }
 
 func (p *Project) addServerlessFile() {
-	cfg := config.NewServerlessConfig("")
+	cfg := serverless.NewServerlessConfig("")
 	file, _ := os.Create(path.Join(p.Path, "serverless.yml"))
 	defer file.Close()
 	file.WriteString(cfg.ToYaml())
@@ -151,4 +152,21 @@ func (p *Project) GetBranchName() string {
 	name = strings.Replace(name, "_", "-", -1)
 	result := strings.Join(strings.Split(strings.Title(name), "-")[1:], "")
 	return result[:utils.Min(10, len(result))]
+}
+
+func (p *Project) preparePythonEnv() error {
+	log.Println("Preparing python env")
+	requirements := p.Box.String("requirements.txt")
+	file, err := os.Create("Pipfile")
+	if err != nil {
+		return cli.NewExitError("Could not create Pipfile file", 1)
+	}
+	defer file.Close()
+	file.WriteString(requirements)
+
+	cmd := exec.Command("pipenv", "install")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	return err
 }

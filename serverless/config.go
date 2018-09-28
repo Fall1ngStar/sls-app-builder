@@ -1,4 +1,4 @@
-package config
+package serverless
 
 import (
 	"github.com/imdario/mergo"
@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-type ServerlessConfig struct {
+type Config struct {
 	Service   Service
 	Package   Package             `yaml:",omitempty"`
 	Provider  Provider            `yaml:",omitempty"`
@@ -45,8 +45,8 @@ type Function struct {
 type Custom struct {
 }
 
-func NewServerlessConfig(serviceName string) *ServerlessConfig {
-	config := ServerlessConfig{
+func NewServerlessConfig(serviceName string) *Config {
+	config := Config{
 		Service: Service{
 			Name: serviceName,
 		},
@@ -61,18 +61,18 @@ func NewServerlessConfig(serviceName string) *ServerlessConfig {
 	return &config
 }
 
-func (cfg *ServerlessConfig) ToYaml() string {
+func (cfg *Config) ToYaml() string {
 	result, _ := yaml.Marshal(cfg)
 	return string(result)
 }
 
-func LoadServerlessConfig(path string) (*ServerlessConfig, error) {
+func LoadServerlessConfig(path string) (*Config, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	var config ServerlessConfig
+	var config Config
 	err = yaml.Unmarshal(content, &config)
 	if err != nil {
 		log.Println(err)
@@ -81,7 +81,7 @@ func LoadServerlessConfig(path string) (*ServerlessConfig, error) {
 	return &config, nil
 }
 
-func (cfg *ServerlessConfig) UpdateConfigFile(path string) {
+func (cfg *Config) UpdateConfigFile(path string) {
 	var oldConf, newConf yaml.MapSlice
 	content, _ := ioutil.ReadFile(path)
 	yaml.Unmarshal(content, &oldConf)

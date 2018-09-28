@@ -25,7 +25,7 @@ func main() {
 			Usage: "Check requirements for project creation",
 			Action: func(c *cli.Context) error {
 				fmt.Println("Serverless:", project.CheckExecutableInPath("serverless"))
-				fmt.Println("Python:", project.CheckExecutableInPath("python"))
+				fmt.Println("Python:", project.CheckExecutableInPath("pipenv"))
 				fmt.Println("NPM:", project.CheckExecutableInPath("npm"))
 				return nil
 			},
@@ -62,6 +62,7 @@ func main() {
 				fmt.Println(filepath.Clean(p.Path))
 				wd, _ := os.Getwd()
 				fmt.Println(filepath.Dir(wd))
+				fmt.Println(filepath.Ext(wd))
 				return nil
 			},
 		},
