@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/Fall1ngStar/sls-app-builder/project"
+	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/urfave/cli"
 	"log"
 	"os"
@@ -22,13 +23,8 @@ func main() {
 		},
 		{
 			Name:  "check",
-			Usage: "Check requirements for project creation",
-			Action: func(c *cli.Context) error {
-				fmt.Println("Serverless:", project.CheckExecutableInPath("serverless"))
-				fmt.Println("Python:", project.CheckExecutableInPath("pipenv"))
-				fmt.Println("NPM:", project.CheckExecutableInPath("npm"))
-				return nil
-			},
+			Usage: "Check executables requirements for project creation",
+			Action: utils.CheckRequiredExecutables,
 		},
 		{
 			Name: "cfg",
@@ -37,9 +33,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				//key := p.Serverless["service"]
 				fmt.Println(p.Serverless)
-				//fmt.Println(p.Path)
 				return nil
 			},
 		},
@@ -48,9 +42,6 @@ func main() {
 			Action: func(c *cli.Context) error {
 				proj, _ := project.LoadProject()
 				fmt.Println(proj.GetBranchName())
-				//cmd := exec.Command("serverless", "package", "--verbose")
-				//cmd.Stdout = os.Stdout
-				//cmd.Run()
 				return nil
 			},
 		},
@@ -63,6 +54,22 @@ func main() {
 				wd, _ := os.Getwd()
 				fmt.Println(filepath.Dir(wd))
 				fmt.Println(filepath.Ext(wd))
+				return nil
+			},
+		},
+		{
+			Name: "deploy",
+			Usage: "Deploy the current projet",
+			Flags:  []cli.Flag{
+				cli.StringFlag{
+					Name:"stage, s",
+					Value: "DEV",
+					Usage: "Stage to deploy",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				fmt.Println(c.FlagNames())
+				fmt.Println(c.String("stage"))
 				return nil
 			},
 		},

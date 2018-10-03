@@ -33,6 +33,10 @@ type Project struct {
 }
 
 func CreateProject(c *cli.Context) error {
+	err := utils.CheckRequiredExecutables(c)
+	if err != nil {
+		return err
+	}
 	var project Project
 	if c.NArg() == 0 {
 		project.Path = "."
@@ -45,7 +49,7 @@ func CreateProject(c *cli.Context) error {
 	} else {
 		return cli.NewExitError("Wrong argument number provided", 1)
 	}
-	err := project.initProjectGitRepository()
+	err = project.initProjectGitRepository()
 	if err != nil {
 		return err
 	}
@@ -124,12 +128,8 @@ func (p *Project) addEnvFiles() {
 	}
 }
 
-func CheckExecutableInPath(executable string) bool {
-	_, err := exec.LookPath(executable)
-	return err == nil
-}
-
 func (p *Project) addServerlessFile() {
+
 	cfg := serverless.NewServerlessConfig("")
 	file, _ := os.Create(path.Join(p.Path, "serverless.yml"))
 	defer file.Close()
@@ -156,15 +156,16 @@ func (p *Project) GetBranchName() string {
 
 func (p *Project) preparePythonEnv() error {
 	log.Println("Preparing python env")
-	requirements := p.Box.String("requirements.txt")
-	file, err := os.Create("Pipfile")
+	pipfile := p.Box.String("Pipfile")
+	file, err := os.Create(path.Join(p.Path, "Pipfile"))
 	if err != nil {
 		return cli.NewExitError("Could not create Pipfile file", 1)
 	}
 	defer file.Close()
-	file.WriteString(requirements)
+	file.WriteString(pipfile)
 
-	cmd := exec.Command("pipenv", "install")
+	os.Chdir(p.Path)
+	cmd := exec.Command("pipenv", "install", "-d")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

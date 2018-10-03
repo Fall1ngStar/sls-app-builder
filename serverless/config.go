@@ -13,7 +13,7 @@ type Config struct {
 	Package   Package             `yaml:",omitempty"`
 	Provider  Provider            `yaml:",omitempty"`
 	Functions map[string]Function `yaml:",omitempty"`
-	//Custom   Custom   `yaml:",omitempty"`
+	Plugins   []string            `yaml:",omitempty"`
 }
 
 type Service struct {
