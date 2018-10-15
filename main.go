@@ -48,9 +48,6 @@ func main() {
 		{
 			Name: "test",
 			Action: func(c *cli.Context) error {
-				p, _ := project.LoadProject()
-				fmt.Println(filepath.Dir(p.Path))
-				fmt.Println(filepath.Clean(p.Path))
 				wd, _ := os.Getwd()
 				fmt.Println(filepath.Dir(wd))
 				fmt.Println(filepath.Ext(wd))

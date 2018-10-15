@@ -26,7 +26,6 @@ type EnvTemplate struct {
 }
 
 type Project struct {
-	Path       string
 	Repository *git.Repository
 	Box        packr.Box
 	Serverless *serverless.Config
@@ -39,13 +38,13 @@ func CreateProject(c *cli.Context) error {
 	}
 	var project Project
 	if c.NArg() == 0 {
-		project.Path = "."
 	} else if c.NArg() == 1 {
-		project.Path = c.Args()[0]
-		err := project.createRootProjectFolder()
+		folderPath := c.Args()[0]
+		err := project.createRootProjectFolder(folderPath)
 		if err != nil {
 			return err
 		}
+		os.Chdir(folderPath)
 	} else {
 		return cli.NewExitError("Wrong argument number provided", 1)
 	}
@@ -77,15 +76,14 @@ func LoadProject() (*Project, error) {
 		return nil, cli.NewExitError("Could not load serverless config", 1)
 	}
 	return &Project{
-		Path:       ".",
 		Repository: repository,
 		Box:        storageBox,
 		Serverless: serverlessConfig,
 	}, nil
 }
 
-func (p *Project) createRootProjectFolder() error {
-	err := os.Mkdir(p.Path, 0777)
+func (p *Project) createRootProjectFolder(folderPath string) error {
+	err := os.Mkdir(folderPath, 0777)
 	if err != nil {
 		log.Println(err)
 		return cli.NewExitError("Could not create folder", 1)
@@ -94,7 +92,7 @@ func (p *Project) createRootProjectFolder() error {
 }
 
 func (p *Project) initProjectGitRepository() error {
-	repository, err := git.PlainInit(p.Path, false)
+	repository, err := git.PlainInit(".", false)
 	if err != nil {
 		log.Println(err)
 		return cli.NewExitError("Could not init git repository", 1)
@@ -105,12 +103,12 @@ func (p *Project) initProjectGitRepository() error {
 
 func (p *Project) addSubFolders() error {
 	folders := []string{
-		"/src/unit_test",
-		"/src/integration_test",
-		"/conf_git",
+		"src/unit_test",
+		"src/integration_test",
+		"conf_git",
 	}
 	for _, folder := range folders {
-		err := os.MkdirAll(path.Join(p.Path, folder), 0777)
+		err := os.MkdirAll(folder, 0777)
 		if err != nil {
 			return cli.NewExitError("Could not create folder "+folder, 1)
 		}
@@ -122,7 +120,7 @@ func (p *Project) addEnvFiles() {
 	envTemplate := p.Box.String("template_env")
 	for _, env := range ENVS {
 		t, _ := template.New("tmp").Parse(envTemplate)
-		file, _ := os.Create(path.Join(p.Path, "/conf_git/", env+".env"))
+		file, _ := os.Create(path.Join("conf_git/", env+".env"))
 		t.Execute(file, EnvTemplate{EnvName: env})
 		file.Close()
 	}
@@ -131,7 +129,7 @@ func (p *Project) addEnvFiles() {
 func (p *Project) addServerlessFile() {
 
 	cfg := serverless.NewServerlessConfig("")
-	file, _ := os.Create(path.Join(p.Path, "serverless.yml"))
+	file, _ := os.Create("serverless.yml")
 	defer file.Close()
 	file.WriteString(cfg.ToYaml())
 }
@@ -157,14 +155,13 @@ func (p *Project) GetBranchName() string {
 func (p *Project) preparePythonEnv() error {
 	log.Println("Preparing python env")
 	pipfile := p.Box.String("Pipfile")
-	file, err := os.Create(path.Join(p.Path, "Pipfile"))
+	file, err := os.Create("Pipfile")
 	if err != nil {
 		return cli.NewExitError("Could not create Pipfile file", 1)
 	}
 	defer file.Close()
 	file.WriteString(pipfile)
 
-	os.Chdir(p.Path)
 	cmd := exec.Command("pipenv", "install", "-d")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
