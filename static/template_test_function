@@ -1,0 +1,10 @@
+"""
+test_{{.FunctionSnake}}
+
+Tests for the {{.FunctionSnake}} module
+"""
+
+def test_handler():
+    """
+    Test for the handler function
+    """

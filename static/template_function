@@ -1,0 +1,8 @@
+"""
+{{.FunctionSnake}}
+"""
+
+def handler():
+    """
+    Handler for the lambda function
+    """

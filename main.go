@@ -21,6 +21,11 @@ func main() {
             Name:   "create",
             Usage:  "Create a project folder",
             Action: project.CreateProject,
+            Flags: []cli.Flag{
+                cli.BoolFlag{
+                    Name:"skip-pipenv",
+                },
+            },
         },
         {
             Name:   "check",
@@ -49,9 +54,7 @@ func main() {
         {
             Name: "test",
             Action: func(c *cli.Context) error {
-                wd, _ := os.Getwd()
-                fmt.Println(filepath.Dir(wd))
-                fmt.Println(filepath.Ext(wd))
+                fmt.Println(filepath.Join("src", "function.py"))
                 return nil
             },
         },
