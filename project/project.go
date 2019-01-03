@@ -125,7 +125,7 @@ func (p *Project) addEnvFiles() {
 	for _, env := range ENVS {
 		utils.WriteTemplateToFile(
 			envTemplate,
-			filepath.Join("environ", env+".env"),
+			filepath.Join("environ", env+".yml"),
 			EnvTemplate{EnvName: env})
 	}
 }

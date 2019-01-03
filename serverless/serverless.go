@@ -48,12 +48,12 @@ func NewConfig(serviceName string) *Config {
 			Name: serviceName,
 		},
 		Provider: Provider{
-			Name:       "aws",
-			Region:     "eu-west-1",
-			Runtime:    "python3.7",
-			MemorySize: 128,
-			Timeout:    300,
-			DeploymentBucket:serviceName+"-deploys",
+			Name:             "aws",
+			Region:           "eu-west-1",
+			Runtime:          "python3.7",
+			MemorySize:       128,
+			Timeout:          300,
+			DeploymentBucket: serviceName + "-deploys",
 		},
 	}
 	return &config
