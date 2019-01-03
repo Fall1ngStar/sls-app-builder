@@ -2,6 +2,7 @@ package function
 
 type Function struct {
 	Handler string
+	Layers  []string
 	//Events  []Event `yaml:",omitempty"`
 }
 

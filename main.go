@@ -6,8 +6,6 @@ import (
 	"github.com/Fall1ngStar/sls-app-builder/project"
 	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -34,32 +32,13 @@ func main() {
 			Action: utils.CheckRequiredExecutables,
 		},
 		{
-			Name: "cfg",
-			Action: func(c *cli.Context) error {
-				p, err := project.LoadProject()
-				if err != nil {
-					return err
-				}
-				fmt.Println(p.Serverless)
-				return nil
-			},
-		},
-		{
-			Name: "package",
-			Action: func(c *cli.Context) error {
-				proj, _ := project.LoadProject()
-				fmt.Println(proj.GetBranchName())
-				return nil
-			},
+			Name: "layers",
+			Action: commands.DeployLayers,
 		},
 		{
 			Name: "test",
 			Action: func(c *cli.Context) error {
-				confContent, _ := ioutil.ReadFile("environ/DEV.yml")
-				var conf yaml.MapSlice
-				confContent =  []byte(os.ExpandEnv(string(confContent)))
-				yaml.Unmarshal(confContent, &conf)
-				fmt.Println(conf)
+				os.Chdir("tmp")
 				return nil
 			},
 		},

@@ -1,0 +1,11 @@
+service:
+  name: {{.ProjectName}}-deps
+provider:
+  name: aws
+  region: eu-west-1
+  deploymentbucket: {{.ProjectName}}-deploys
+
+layers:
+  depLayers:
+    name: ${self:service.name}-${self:provider.stage}
+    path: dist/

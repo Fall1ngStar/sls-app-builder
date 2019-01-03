@@ -35,6 +35,9 @@ func updateConfig(p *project.Project, functionName string) {
 
 	p.Serverless.Functions[strcase.ToLowerCamel(functionName)] = function.Function{
 		Handler: "src/" + functionName + ".handler",
+		Layers: []string{
+			"arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:layer:proj-deps-dev",
+		},
 	}
 
 	p.Serverless.UpdateConfigFile("./serverless.yml")

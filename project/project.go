@@ -1,12 +1,14 @@
 package project
 
 import (
+	"fmt"
 	"github.com/Fall1ngStar/sls-app-builder/serverless"
 	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/gobuffalo/packr"
 	"github.com/urfave/cli"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -60,9 +62,10 @@ func CreateProject(c *cli.Context) error {
 	}
 	project.addEnvFiles()
 	project.addServerlessFile()
-	if c.Bool("skip-pipenv") {
+	if !c.Bool("skip-pipenv") {
 		project.preparePythonEnv()
 	}
+	project.addServerlessPlugins()
 	project.makeFirstCommit()
 	return nil
 }
@@ -171,4 +174,25 @@ func (p *Project) preparePythonEnv() error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	return err
+}
+
+func (p *Project) addServerlessPlugins() {
+	packageJson, err := p.Box.FindString("package.json")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = ioutil.WriteFile("package.json", []byte(packageJson), 0755)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	cmd := exec.Command("npm", "install")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
