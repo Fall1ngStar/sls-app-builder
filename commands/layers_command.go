@@ -7,7 +7,6 @@ import (
 	"github.com/urfave/cli"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -32,8 +31,7 @@ func DeployLayers(c *cli.Context) error {
 		branch = stage
 	}
 
-	cmd := exec.Command("pipenv", "lock", "-r")
-	result, err := cmd.Output()
+	result, err := utils.RunWithOutput("pipenv", "lock", "-r")
 	if err != nil {
 		return err
 	}
@@ -53,25 +51,20 @@ func DeployLayers(c *cli.Context) error {
 			ProjectName string
 		}{ProjectName: p.Serverless.Service.Name})
 
-	cmd = exec.Command("pipenv", "run", "pip", "install", "-r",
+	err = utils.RunWithStdout("pipenv", "run", "pip", "install", "-r",
 		filepath.Join("tmp", "requirements.txt"), "--target",
 		filepath.Join("tmp", "dist", "ppython"))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
 	if err != nil {
 		return err
 	}
+
 	err = os.Chdir("tmp")
 	if err != nil {
 		return err
 	}
 	defer os.Chdir("..")
 
-	cmd = exec.Command("serverless", "deploy", "--stage", branch)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	err = utils.RunWithStdout("serverless", "deploy", "--stage", branch)
 	if err != nil {
 		return err
 	}

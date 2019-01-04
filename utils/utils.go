@@ -47,3 +47,15 @@ func WriteTemplateToFile(tmpl, path string, content interface{}) {
 	defer file.Close()
 	t.Execute(file, content)
 }
+
+func RunWithStdout(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func RunWithOutput(name string, args ...string) ([]byte, error) {
+	cmd := exec.Command(name, args...)
+	return cmd.Output()
+}

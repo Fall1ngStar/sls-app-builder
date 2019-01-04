@@ -2,15 +2,16 @@ package commands
 
 import (
 	"github.com/Fall1ngStar/sls-app-builder/project"
+	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/endpoints"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/iancoleman/strcase"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 )
@@ -35,17 +36,14 @@ func DeployProject(c *cli.Context) error {
 
 	err = getDepLayerVersion(p, branch)
 	if err != nil {
-	    return err
+		return err
 	}
+	args := []string{"deploy", "--stage", branch,}
+	if function := c.String("function"); function != "" {
+		args = append(args, []string{"-f", strcase.ToLowerCamel(function)}...)
+	}
+	return utils.RunWithStdout("serverless", args...)
 
-	cmd := exec.Command("serverless", "deploy", "--stage", branch)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-	    return err
-	}
-	return nil
 }
 
 func loadEnvFile(stage string, gitlab bool) error {
@@ -76,16 +74,16 @@ func getDepLayerVersion(p *project.Project, env string) error {
 	layerName := p.Serverless.Service.Name + "-deps-" + env
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
-	    return err
+		return err
 	}
 	cfg.Region = endpoints.EuWest1RegionID
 	lambdaClient := lambda.New(cfg)
 
 	resp, err := lambdaClient.ListLayerVersionsRequest(&lambda.ListLayerVersionsInput{
-		LayerName:aws.String(layerName),
+		LayerName: aws.String(layerName),
 	}).Send()
 	if err != nil {
-	    return err
+		return err
 	}
 	if len(resp.LayerVersions) == 0 {
 		return cli.NewExitError("Dependency layer is not deployed, please use \"slapp layers\"", 1)
@@ -96,7 +94,7 @@ func getDepLayerVersion(p *project.Project, env string) error {
 	})
 	err = os.Setenv("LAYER_VERSION_ARN", *resp.LayerVersions[0].LayerVersionArn)
 	if err != nil {
-	    return err
+		return err
 	}
 	return nil
 }

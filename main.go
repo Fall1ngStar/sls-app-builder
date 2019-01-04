@@ -1,31 +1,24 @@
 package main
 
 import (
-	"fmt"
 	"github.com/Fall1ngStar/sls-app-builder/commands"
 	"github.com/Fall1ngStar/sls-app-builder/project"
 	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/urfave/cli"
 	"log"
 	"os"
-	"sort"
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "Builder"
-	app.Usage = "Building serverless app"
+	app.Name = "SLApp"
+	app.Usage = "A CLI to create ServerLess Applications in Python"
 	app.Version = "0.0.1"
 	app.Commands = []cli.Command{
 		{
 			Name:   "create",
 			Usage:  "Create a project folder",
 			Action: project.CreateProject,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name: "skip-pipenv",
-				},
-			},
 		},
 		{
 			Name:   "check",
@@ -34,6 +27,7 @@ func main() {
 		},
 		{
 			Name:   "layers",
+			Usage:  "Deploy the dependency layer for this environment",
 			Action: commands.DeployLayers,
 			Flags: []cli.Flag{
 				cli.StringFlag{
@@ -47,21 +41,6 @@ func main() {
 			},
 		},
 		{
-			Name: "test",
-			Action: func(c *cli.Context) error {
-				list := []struct {
-					a int
-				}{
-					{3}, {1}, {2},
-				}
-				sort.Slice(list, func(i, j int) bool {
-					return list[i].a > list[j].a
-				})
-				fmt.Println(list)
-				return nil
-			},
-		},
-		{
 			Name:  "deploy",
 			Usage: "Deploy the current projet",
 			Flags: []cli.Flag{
@@ -70,11 +49,12 @@ func main() {
 					Value: "DEV",
 					Usage: "Stage to deploy",
 				},
-				cli.StringFlag{
-					Name: "env",
-				},
 				cli.BoolFlag{
 					Name: "gitlab, g",
+				},
+				cli.StringFlag{
+					Name:  "function, f",
+					Usage: "Deploy a specific function",
 				},
 			},
 			Action: commands.DeployProject,

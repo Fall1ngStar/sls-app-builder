@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -209,11 +208,7 @@ func (p *Project) preparePythonEnv() error {
 		return err
 	}
 
-	cmd := exec.Command("pipenv", "install", "-d")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	return err
+	return utils.RunWithStdout("pipenv", "install", "-d")
 }
 
 func (p *Project) addServerlessPlugins() error {
@@ -227,15 +222,7 @@ func (p *Project) addServerlessPlugins() error {
 		fmt.Println(err)
 		return err
 	}
-	cmd := exec.Command("npm", "install")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	return nil
+	return utils.RunWithStdout("npm", "install")
 }
 
 func (p *Project) createDeployBucket() error {

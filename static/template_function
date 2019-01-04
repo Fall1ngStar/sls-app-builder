@@ -2,7 +2,7 @@
 {{.FunctionSnake}}
 """
 
-def handler():
+def handler(event, _context):
     """
     Handler for the lambda function
     """
