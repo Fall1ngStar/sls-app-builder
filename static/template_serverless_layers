@@ -3,7 +3,7 @@ service:
 provider:
   name: aws
   region: eu-west-1
-  deploymentbucket: {{.ProjectName}}-deploys
+  deploymentBucket: {{.ProjectName}}-deploys
 
 layers:
   depLayers:

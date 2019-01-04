@@ -32,10 +32,10 @@ type Provider struct {
 	Name               string            `yaml:",omitempty"`
 	Region             string            `yaml:",omitempty"`
 	Runtime            string            `yaml:",omitempty"`
-	MemorySize         int               `yaml:",omitempty"`
+	MemorySize         int               `yaml:"memorySize,omitempty"`
 	Timeout            int               `yaml:",omitempty"`
-	DeploymentBucket   string            `yaml:",omitempty"`
-	LogRetentionInDays string            `yaml:",omitempty"`
+	DeploymentBucket   string            `yaml:"deploymentBucket,omitempty"`
+	LogRetentionInDays string            `yaml:"logRetetionInDays,omitempty"`
 	Environment        map[string]string `yaml:",omitempty"`
 }
 
@@ -54,6 +54,17 @@ func NewConfig(serviceName string) *Config {
 			MemorySize:       128,
 			Timeout:          300,
 			DeploymentBucket: serviceName + "-deploys",
+		},
+		Package: Package{
+			Exclude: []string{
+				"./**",
+				"!src/**",
+				"src/unit_test/**",
+				"src/integration_test/**",
+			},
+		},
+		Plugins: []string{
+			"serverless-pseudo-parameters",
 		},
 	}
 	return &config

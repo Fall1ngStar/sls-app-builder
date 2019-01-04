@@ -1,6 +1,7 @@
 module github.com/Fall1ngStar/sls-app-builder
 
 require (
+	github.com/aws/aws-sdk-go-v2 v0.7.0
 	github.com/gobuffalo/packr v1.21.9
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
 	github.com/imdario/mergo v0.3.6

@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"github.com/Fall1ngStar/sls-app-builder/serverless"
 	"github.com/Fall1ngStar/sls-app-builder/utils"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/endpoints"
+	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gobuffalo/packr"
 	"github.com/urfave/cli"
 	"gopkg.in/src-d/go-git.v4"
@@ -60,13 +64,34 @@ func CreateProject(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
 	project.addEnvFiles()
-	project.addServerlessFile()
-	if !c.Bool("skip-pipenv") {
-		project.preparePythonEnv()
+
+	err = project.addServerlessFile()
+	if err != nil {
+		return err
 	}
-	project.addServerlessPlugins()
-	project.makeFirstCommit()
+
+	err = project.preparePythonEnv()
+	if err != nil {
+		return err
+	}
+
+	err = project.addServerlessPlugins()
+	if err != nil {
+		return err
+	}
+
+	err = project.createDeployBucket()
+	if err != nil {
+		return err
+	}
+
+	err = project.makeFirstCommit()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -133,22 +158,34 @@ func (p *Project) addEnvFiles() {
 	}
 }
 
-func (p *Project) addServerlessFile() {
+func (p *Project) addServerlessFile() error {
 
 	cfg := serverless.NewConfig(p.ProjectName)
+	p.Serverless = cfg
 	file, _ := os.Create("serverless.yml")
 	defer file.Close()
-	file.WriteString(cfg.ToYaml())
+	_, err := file.WriteString(cfg.ToYaml())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (p *Project) makeFirstCommit() {
+func (p *Project) makeFirstCommit() error {
 	tree, _ := p.Repository.Worktree()
-	tree.Add(".")
-	tree.Commit("Initial commit", &git.CommitOptions{
+	_, err := tree.Add(".")
+	if err != nil {
+		return err
+	}
+	_, err = tree.Commit("Initial commit", &git.CommitOptions{
 		Author: &object.Signature{
 			Name: "SLS App Builder CLI",
 		},
 	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *Project) GetBranchName() string {
@@ -167,7 +204,10 @@ func (p *Project) preparePythonEnv() error {
 		return cli.NewExitError("Could not create Pipfile file", 1)
 	}
 	defer file.Close()
-	file.WriteString(pipfile)
+	_, err = file.WriteString(pipfile)
+	if err != nil {
+		return err
+	}
 
 	cmd := exec.Command("pipenv", "install", "-d")
 	cmd.Stdout = os.Stdout
@@ -176,16 +216,16 @@ func (p *Project) preparePythonEnv() error {
 	return err
 }
 
-func (p *Project) addServerlessPlugins() {
+func (p *Project) addServerlessPlugins() error {
 	packageJson, err := p.Box.FindString("package.json")
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	err = ioutil.WriteFile("package.json", []byte(packageJson), 0755)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	cmd := exec.Command("npm", "install")
 	cmd.Stdout = os.Stdout
@@ -193,6 +233,27 @@ func (p *Project) addServerlessPlugins() {
 	err = cmd.Run()
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
+	return nil
+}
+
+func (p *Project) createDeployBucket() error {
+	cfg, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	cfg.Region = endpoints.EuWest1RegionID
+	s3Client := s3.New(cfg)
+	bucketName := aws.String(p.Serverless.Service.Name + "-deploys")
+	req := s3Client.CreateBucketRequest(&s3.CreateBucketInput{
+		Bucket: bucketName,
+	})
+	_, err = req.Send()
+	// Excluding errors of bucket already existing
+	if err != nil && !strings.Contains(err.Error(), "already") {
+		return err
+	}
+	return nil
 }
