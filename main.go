@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 	"log"
 	"os"
+	"sort"
 )
 
 func main() {
@@ -32,13 +33,31 @@ func main() {
 			Action: utils.CheckRequiredExecutables,
 		},
 		{
-			Name: "layers",
+			Name:   "layers",
 			Action: commands.DeployLayers,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "stage, s",
+					Value: "DEV",
+					Usage: "Stage to deploy",
+				},
+				cli.StringFlag{
+					Name: "env",
+				},
+			},
 		},
 		{
 			Name: "test",
 			Action: func(c *cli.Context) error {
-				os.Chdir("tmp")
+				list := []struct {
+					a int
+				}{
+					{3}, {1}, {2},
+				}
+				sort.Slice(list, func(i, j int) bool {
+					return list[i].a > list[j].a
+				})
+				fmt.Println(list)
 				return nil
 			},
 		},
@@ -51,12 +70,14 @@ func main() {
 					Value: "DEV",
 					Usage: "Stage to deploy",
 				},
+				cli.StringFlag{
+					Name: "env",
+				},
+				cli.BoolFlag{
+					Name: "gitlab, g",
+				},
 			},
-			Action: func(c *cli.Context) error {
-				fmt.Println(c.FlagNames())
-				fmt.Println(c.String("stage"))
-				return nil
-			},
+			Action: commands.DeployProject,
 		},
 		{
 			Name: "add",
@@ -66,11 +87,11 @@ func main() {
 					Action: commands.CreateFunction,
 				},
 				{
-					Name:"env",
+					Name:   "env",
 					Action: commands.CreateEnvVariable,
 					Flags: []cli.Flag{
 						cli.StringFlag{
-							Name:"from-env, e",
+							Name: "from-env, e",
 						},
 					},
 				},

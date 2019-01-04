@@ -7,5 +7,5 @@ provider:
 
 layers:
   depLayers:
-    name: ${self:service.name}-${self:provider.stage}
+    name: ${self:service.name}-${opt:stage}
     path: dist/

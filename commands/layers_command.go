@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/Fall1ngStar/sls-app-builder/project"
 	"github.com/Fall1ngStar/sls-app-builder/utils"
 	"github.com/urfave/cli"
@@ -11,17 +12,26 @@ import (
 )
 
 func DeployLayers(c *cli.Context) error {
-	os.RemoveAll("tmp")
-	err := os.MkdirAll("tmp/dist", 0777)
+	// TODO check bug directory first letter removed
+	err := os.MkdirAll(filepath.Join("tmp", "dist", "ppython"), 0777)
 	if err != nil {
 		return err
 	}
-	//defer os.RemoveAll("tmp")
+	defer func() {
+		err := os.RemoveAll("tmp")
+		fmt.Println(err)
+	}()
 
 	p, err := project.LoadProject()
 	if err != nil {
 		return err
 	}
+	stage := c.String("stage")
+	branch := p.GetBranchName()
+	if branch == "" {
+		branch = stage
+	}
+
 	cmd := exec.Command("pipenv", "lock", "-r")
 	result, err := cmd.Output()
 	if err != nil {
@@ -45,7 +55,7 @@ func DeployLayers(c *cli.Context) error {
 
 	cmd = exec.Command("pipenv", "run", "pip", "install", "-r",
 		filepath.Join("tmp", "requirements.txt"), "--target",
-		filepath.Join("tmp", "dist"))
+		filepath.Join("tmp", "dist", "ppython"))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -56,8 +66,9 @@ func DeployLayers(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer os.Chdir("..")
 
-	cmd = exec.Command("serverless", "deploy")
+	cmd = exec.Command("serverless", "deploy", "--stage", branch)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
