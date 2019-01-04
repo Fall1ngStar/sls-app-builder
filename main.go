@@ -77,6 +77,18 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:   "invoke",
+			Usage:  "Call a function",
+			Action: commands.InvokeFunction,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "stage, s",
+					Value: "DEV",
+					Usage: "Stage to deploy",
+				},
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
